@@ -1,5 +1,5 @@
 """Includes all vault base objects such as Entry and Vault"""
-
+import logging
 import json
 import zipfile
 from collections import defaultdict
@@ -10,6 +10,7 @@ from collections import defaultdict
 from urllib.parse import urlparse
 from copy import deepcopy
 
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Entry:
     """Represents a generic entry in a password vault."""
@@ -30,6 +31,9 @@ class Entry:
     def __repr__(self):
         """Provides a string representation of the entry."""
         return f"Entry(item_id={self.item_id}, type={self.type}, name={self.name})"
+
+    def __str__(self):
+        return f"Entry(type={self.type}, name={self.name})"
 
     def clean(self):
         """Placeholder for cleaning specific entry types."""
@@ -115,15 +119,15 @@ class LoginEntry(Entry):
 
     def clean_name(self, name: Optional[str]) -> Optional[str]:
         """Cleans item names (title case for websites, handles None)."""
-        return name.title() if name and not urlparse(name).scheme else name
+        return name.title() if name and not "." in name else name
 
-    def clean(self):
+    def clean(self, clean_name = False):
         """Cleans URLs and name in a login entry."""
         if self.urls:
             self.urls = self.unique_list(
                 [self.clean_url(url) for url in self.urls]
             )
-        if self.name:
+        if clean_name and self.name:
             self.name = self.clean_name(self.name)
 
     def _merge_entry(self, other: "LoginEntry") -> None:
@@ -225,7 +229,7 @@ class Vault:
         self.items = []  # Clear out the existing items
         for _, entries in seen_items.items():
             if len(entries) > 1:
-                print(f"Found {len(entries)} duplicates of: {entries[0]}")
+                logging.info(f"Found {len(entries)} duplicates of: {entries[0]}")
                 merged_entry = entries[0]  # Start with the first entry
                 for other_entry in entries[1:]:
                     merged_entry.merge(other_entry)
@@ -351,7 +355,7 @@ class ProtonPassVaultHandler(VaultHandler):
             with open(debug_output_file, "w", encoding="utf-8") as f:
                 json.dump(data_to_save, f, indent=4, ensure_ascii=False)
 
-            print(f"Data saved to {output_file} and {debug_output_file}")
+            logging.info(f"Data saved to {output_file} and {debug_output_file}")
 
         except Exception as e:
             raise ValueError(f"Error saving data: {e}")
@@ -377,7 +381,7 @@ def main(
         processor.deduplicate_in_vaults()
         processor.save_data(output_file)
     except (zipfile.BadZipFile, FileNotFoundError, ValueError, KeyError) as e:
-        print(f"Error processing file: {e}")
+        logging.error(f"Error processing file: {e}")
 
 
 if __name__ == "__main__":
