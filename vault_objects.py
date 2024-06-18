@@ -17,9 +17,9 @@ class Entry:
     def __init__(self, item: Dict[str, Any]):
         self.item_dict = item
         self.item_id = item.get("itemId")
+        self.data = item.get("data", {})
         self.name = self.data.get("metadata").get("name")
 
-        self.data = item.get("data", {})
         self.pinned = item.get("pinned", False)
         self.type = self.data.get("type")
         self.create_time = item.get("createTime")
@@ -45,14 +45,15 @@ class Entry:
             "Merging not implemented for this entry type."
         )
 
-    def __unique_list(
+    def unique_list(
+        self,
         lst: List[Union[str, float, int]],
     ) -> List[Union[str, float, int]]:
         """Returns a unique list of strings, floats, or integers while preserving order."""
         seen = set()
         return [x for x in lst if not (x in seen or seen.add(x))]
 
-    def __clean_name(name: Optional[str]) -> Optional[str]:
+    def clean_name(name: Optional[str]) -> Optional[str]:
         """Cleans item names (title case for websites, handles None)."""
         return name.title() if name and not urlparse(name).scheme else name
 
@@ -103,7 +104,7 @@ class LoginEntry(Entry):
         """Equality comparison based on hash."""
         return isinstance(other, LoginEntry) and hash(self) == hash(other)
 
-    def __clean_url(self, url: str) -> str:
+    def clean_url(self, url: str) -> str:
         """Cleans URLs to their base form."""
         parsed_url = urlparse(url)
         return (
@@ -112,7 +113,7 @@ class LoginEntry(Entry):
             else url
         )
 
-    def __clean_name(self, name: Optional[str]) -> Optional[str]:
+    def clean_name(self, name: Optional[str]) -> Optional[str]:
         """Cleans item names (title case for websites, handles None)."""
         return name.title() if name and not urlparse(name).scheme else name
 
@@ -120,12 +121,12 @@ class LoginEntry(Entry):
         """Cleans URLs and name in a login entry."""
         if self.urls:
             self.urls = self.unique_list(
-                [self.__clean_url(url) for url in self.urls]
+                [self.clean_url(url) for url in self.urls]
             )
         if self.name:
-            self.name = self.__clean_name(self.name)
+            self.name = self.clean_name(self.name)
 
-    def _merge_implementation(self, other: "LoginEntry") -> None:
+    def _merge_entry(self, other: "LoginEntry") -> None:
         """Merges two LoginEntry objects."""
         if self != other:
             raise ValueError(f"Unable to merge: {self} != {other}")
@@ -166,7 +167,7 @@ class LoginEntry(Entry):
         metadata["name"] = self.name
         metadata["note"] = self.note
 
-        content = return_dict["content"]
+        content = return_dict["data"]["content"]
         content["username"] = self.username
         content["password"] = self.password
         content["urls"] = self.urls
@@ -249,11 +250,9 @@ class VaultHandler:
         data_file_path: str,
         vault_names: Optional[List[str]] = None,
     ):
-        self.data_file_path: str = data_file_path
-        self.vault_names: List[str] = (
-            [vault_names] if isinstance(vault_names, str) else vault_names
-        )
-        self.vaults: List[Vault] = self.load_data()
+        self.data_file_path = data_file_path
+        self.vault_names = vault_names
+        self.load_data()
 
     def load_vaults(self) -> List[Vault]:
         """Cleans items in the vault (implementation varies by format)."""
@@ -265,7 +264,7 @@ class VaultHandler:
             vault.clean_items()
         return self.vaults
 
-    def deduplicate_items(self) -> List[Vault]:
+    def deduplicate_in_vaults(self) -> List[Vault]:
         """Deduplicates items based on a unique key (implementation varies by format)."""
         for vault in self.vaults:
             vault.merge_duplicate_items()
@@ -288,16 +287,17 @@ class ProtonPassVaultHandler(VaultHandler):
 
     def load_data(self) -> List[Vault]:
         """Loads data from a Proton Pass zip file and filters vaults."""
-
         vaults = []
-
         try:
             with zipfile.ZipFile(self.data_file_path, "r") as zf:
                 # Directly access data.json within the "Proton Pass" folder
                 with zf.open("Proton Pass/data.json", "r") as f:
                     data = json.load(f)
                 for vault_id, vault_data in data["vaults"].items():
-                    if not self.vault_names or vault_data["name"] in self.vault_names:
+                    if (
+                        not self.vault_names
+                        or vault_data["name"] in self.vault_names
+                    ):
                         vaults.append(
                             Vault(
                                 vault_id,
@@ -305,10 +305,56 @@ class ProtonPassVaultHandler(VaultHandler):
                                 vault_dict=vault_data,
                             )
                         )
+                self.raw_data = deepcopy(data)
+                self.encrypted = data["encrypted"]
+                self.user_id = data["userId"]
+                self.version = data["version"]
+                self.vaults = vaults
         except (zipfile.BadZipFile, KeyError) as e:
             raise ValueError(f"Invalid Proton Pass export file: {e}")
-        self.vaults = vaults
-        return vaults
+        return self.vaults
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "encrypted": self.encrypted,
+            "userId": self.user_id,
+            "version": self.version,
+            "vaults": {vault.id: vault.to_dict() for vault in self.vaults},
+        }
+
+    def save_data(self, output_file: str) -> None:
+        """
+        Saves the processed vault data back into a Proton Pass zip file (in UTF-8).
+        Additionally, saves a copy of the data in a JSON file for debugging.
+        """
+        try:
+            # Get the data to be written using as_dict()
+            data_to_save = self.as_dict()
+
+            # Create the output zip file
+            with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
+                # Create the "Proton Pass" directory within the zip
+                zf.writestr("Proton Pass/", "")
+                # Write the JSON data to "Proton Pass/data.json" in UTF-8
+                json_string = json.dumps(
+                    data_to_save, indent=4, ensure_ascii=False
+                )  # Create JSON string
+                json_bytes = json_string.encode(
+                    "utf-8"
+                )  # Encode the string as UTF-8 bytes
+                zf.writestr(
+                    "Proton Pass/data.json", json_bytes
+                )  # Write the bytes to the zip file
+
+            # Save a copy as a JSON file in the working directory (for debugging)
+            debug_output_file = "deduped_data.json"
+            with open(debug_output_file, "w", encoding="utf-8") as f:
+                json.dump(data_to_save, f, indent=4, ensure_ascii=False)
+
+            print(f"Data saved to {output_file} and {debug_output_file}")
+
+        except Exception as e:
+            raise ValueError(f"Error saving data: {e}")
 
 
 def main(
@@ -324,15 +370,12 @@ def main(
             # "csv": CSVVaultHandler,
             # "bitwarden": BitwardenVaultHandler,
         }[format_str]
-        processor = format_strategy_class()
+        processor = format_strategy_class(input_file)
 
-        data = processor.load_data(input_file, vault_names)
-        cleaned_items = processor.clean_items(data)
-        deduped_items = processor.deduplicate_items(cleaned_items)
-        processor.save_data(
-            deduped_items, output_file
-        )  # Now calling the handler's save_data
-        print(f"Deduplication complete. Saved to {output_file}")
+        processor.load_data()
+        processor.clean_vaults()
+        processor.deduplicate_in_vaults()
+        processor.save_data(output_file)
     except (zipfile.BadZipFile, FileNotFoundError, ValueError, KeyError) as e:
         print(f"Error processing file: {e}")
 
