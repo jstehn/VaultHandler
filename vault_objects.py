@@ -1,16 +1,30 @@
 """Includes all vault base objects such as Entry and Vault"""
+
 import logging
 import json
 import zipfile
 from collections import defaultdict
 from urllib.parse import urlparse
 import argparse
-from typing import Dict, List, Tuple, Any, Optional, Union, List, Optional
+from typing import (
+    Dict,
+    List,
+    Literal,
+    Tuple,
+    Any,
+    Optional,
+    Union,
+    List,
+    Optional,
+)
 from collections import defaultdict
 from urllib.parse import urlparse
 from copy import deepcopy
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 
 class Entry:
     """Represents a generic entry in a password vault."""
@@ -121,7 +135,7 @@ class LoginEntry(Entry):
         """Cleans item names (title case for websites, handles None)."""
         return name.title() if name and not "." in name else name
 
-    def clean(self, clean_name = False):
+    def clean(self, clean_name=False):
         """Cleans URLs and name in a login entry."""
         if self.urls:
             self.urls = self.unique_list(
@@ -230,7 +244,9 @@ class Vault:
         self.items = []  # Clear out the existing items
         for _, entries in seen_items.items():
             if len(entries) > 1:
-                logging.info(f"Found {len(entries)} duplicates of: {entries[0]}")
+                logging.info(
+                    f"Found {len(entries)} duplicates of: {entries[0]}"
+                )
                 merged_entry = entries[0]  # Start with the first entry
                 for other_entry in entries[1:]:
                     merged_entry.merge(other_entry)
@@ -252,16 +268,18 @@ class VaultHandler:
 
     def __init__(
         self,
-        data_file_path: str,
+        input_file: str,
         vault_names: Optional[List[str]] = None,
     ):
-        self.data_file_path = data_file_path
+        self.input_file = input_file
         self.vault_names = vault_names
-        self.load_data()
+        self.vaults = []
 
-    def load_vaults(self) -> List[Vault]:
+    def load_data(
+        self, vault_format: Literal["protonpass", "csv", "bitwarden"]
+    ) -> List[Vault]:
         """Cleans items in the vault (implementation varies by format)."""
-        raise NotImplementedError("Subclasses must implement load_vaults!")
+        return {"protonpass": ProtonPassLoader}[vault_format]().load_data(self)
 
     def clean_vaults(self) -> List[Vault]:
         """Cleans items in the vault (implementation varies by format)."""
@@ -269,15 +287,113 @@ class VaultHandler:
             vault.clean_items()
         return self.vaults
 
+    def as_dict(self) -> Dict[str, Any]:
+        """Returns this all the vaults as a single Proton Pass dict"""
+        return {
+            "encrypted": self.encrypted,
+            "userId": self.user_id,
+            "version": self.version,
+            "vaults": {vault.id: vault.to_dict() for vault in self.vaults},
+        }
+
     def deduplicate_in_vaults(self) -> List[Vault]:
         """Deduplicates items based on a unique key (implementation varies by format)."""
         for vault in self.vaults:
             vault.merge_duplicate_items()
         return self.vaults
 
-    def save_data(self, output_filename: str) -> None:
+    def save_data(
+        self,
+        output_filename: str,
+        vault_format: Literal["protonpass", "csv", "bitwarden"],
+    ) -> None:
         """Saves vault data to a file (implementation varies by format)."""
+        return {"protonpass": ProtonPassSaver}[vault_format]().save_data(output_filename, self)
+
+
+class VaultLoader:
+    """Superclass for different vault importers"""
+
+    def load_data(self, vault_handler: VaultHandler) -> List[Vault]:
+        """Loads vaults into a Vault Handler (implementation varies by format)."""
+        raise NotImplementedError("Subclasses must implement load_vaults!")
+
+
+class ProtonPassLoader(VaultLoader):
+    """An object that handles importing Proton Pass zipfiles."""
+
+    def load_data(self, vault_handler: VaultHandler) -> List[Vault]:
+        """Loads data from a Proton Pass zip file and filters vaults."""
+        vaults = []
+        try:
+            with zipfile.ZipFile(vault_handler.input_file, "r") as zf:
+                # Directly access data.json within the "Proton Pass" folder
+                with zf.open("Proton Pass/data.json", "r") as f:
+                    data = json.load(f)
+                for vault_id, vault_data in data["vaults"].items():
+                    if (
+                        not vault_handler.vault_names
+                        or vault_data["name"] in vault_handler.vault_names
+                    ):
+                        vaults.append(
+                            Vault(
+                                vault_id,
+                                vault_data.get("name"),
+                                vault_dict=vault_data,
+                            )
+                        )
+                vault_handler.raw_data = deepcopy(data)
+                vault_handler.encrypted = data["encrypted"]
+                vault_handler.user_id = data["userId"]
+                vault_handler.version = data["version"]
+                vault_handler.vaults = vaults
+        except (zipfile.BadZipFile, KeyError) as e:
+            raise ValueError(f"Invalid Proton Pass export file: {e}")
+        return vault_handler.vaults
+
+
+class VaultSaver:
+    def save_data(self, vault_handler):
+        """Saves vaults into a Vault Handler (implementation varies by format)."""
         raise NotImplementedError("Subclasses must implement save_data!")
+
+
+class ProtonPassSaver(VaultSaver):
+    def save_data(self, output_file, vault_handler: VaultHandler) -> None:
+        """
+        Saves the processed vault data back into a Proton Pass zip file (in UTF-8).
+        Additionally, saves a copy of the data in a JSON file for debugging.
+        """
+        try:
+            # Get the data to be written using as_dict()
+            data_to_save = vault_handler.as_dict()
+
+            # Create the output zip file
+            with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
+                # Create the "Proton Pass" directory within the zip
+                zf.writestr("Proton Pass/", "")
+                # Write the JSON data to "Proton Pass/data.json" in UTF-8
+                json_string = json.dumps(
+                    data_to_save, indent=4, ensure_ascii=False
+                )  # Create JSON string
+                json_bytes = json_string.encode(
+                    "utf-8"
+                )  # Encode the string as UTF-8 bytes
+                zf.writestr(
+                    "Proton Pass/data.json", json_bytes
+                )  # Write the bytes to the zip file
+
+            # Save a copy as a JSON file in the working directory (for debugging)
+            debug_output_file = "deduped_data.json"
+            with open(debug_output_file, "w", encoding="utf-8") as f:
+                json.dump(data_to_save, f, indent=4, ensure_ascii=False)
+
+            logging.info(
+                f"Data saved to {output_file} and {debug_output_file}"
+            )
+
+        except Exception as e:
+            raise ValueError(f"Error saving data: {e}")
 
 
 class ProtonPassVaultHandler(VaultHandler):
@@ -294,7 +410,7 @@ class ProtonPassVaultHandler(VaultHandler):
         """Loads data from a Proton Pass zip file and filters vaults."""
         vaults = []
         try:
-            with zipfile.ZipFile(self.data_file_path, "r") as zf:
+            with zipfile.ZipFile(self.input_file, "r") as zf:
                 # Directly access data.json within the "Proton Pass" folder
                 with zf.open("Proton Pass/data.json", "r") as f:
                     data = json.load(f)
@@ -320,7 +436,7 @@ class ProtonPassVaultHandler(VaultHandler):
         return self.vaults
 
     def as_dict(self) -> Dict[str, Any]:
-        """Returns this all the vaults as a single Proton Pass dict"""        
+        """Returns this all the vaults as a single Proton Pass dict"""
         return {
             "encrypted": self.encrypted,
             "userId": self.user_id,
@@ -357,7 +473,9 @@ class ProtonPassVaultHandler(VaultHandler):
             with open(debug_output_file, "w", encoding="utf-8") as f:
                 json.dump(data_to_save, f, indent=4, ensure_ascii=False)
 
-            logging.info(f"Data saved to {output_file} and {debug_output_file}")
+            logging.info(
+                f"Data saved to {output_file} and {debug_output_file}"
+            )
 
         except Exception as e:
             raise ValueError(f"Error saving data: {e}")
@@ -371,17 +489,11 @@ def main(
 ):
     """Main function to load, clean, deduplicate, and save password data."""
     try:
-        format_strategy_class = {
-            "protonpass": ProtonPassVaultHandler,
-            # "csv": CSVVaultHandler,
-            # "bitwarden": BitwardenVaultHandler,
-        }[format_str]
-        processor = format_strategy_class(input_file, vault_names=vault_names)
-
-        processor.load_data()
+        processor = VaultHandler(input_file, vault_names)
+        processor.load_data("protonpass")
         processor.clean_vaults()
         processor.deduplicate_in_vaults()
-        processor.save_data(output_file)
+        processor.save_data(output_file, "protonpass")
     except (zipfile.BadZipFile, FileNotFoundError, ValueError, KeyError) as e:
         logging.error(f"Error processing file: {e}")
 
