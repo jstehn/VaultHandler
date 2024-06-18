@@ -3,3 +3,4 @@ Vaults/
 __pycache__/vault_objects.cpython-311.pyc
 ppass_deduped.zip
 deduped_data.json
+vault_handle_tests.ipynb
