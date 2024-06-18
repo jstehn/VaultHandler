@@ -159,6 +159,7 @@ class LoginEntry(Entry):
             self.item_id = newer.item_id
 
     def to_dict(self) -> Dict[str, Any]:
+        """Creates a dictionary representation of the entry for Proton Pass"""
         return_dict = deepcopy(self.item_dict)
         return_dict["itemId"] = self.item_id
         return_dict["type"] = "login"
@@ -319,6 +320,7 @@ class ProtonPassVaultHandler(VaultHandler):
         return self.vaults
 
     def as_dict(self) -> Dict[str, Any]:
+        """Returns this all the vaults as a single Proton Pass dict"""        
         return {
             "encrypted": self.encrypted,
             "userId": self.user_id,
@@ -374,7 +376,7 @@ def main(
             # "csv": CSVVaultHandler,
             # "bitwarden": BitwardenVaultHandler,
         }[format_str]
-        processor = format_strategy_class(input_file)
+        processor = format_strategy_class(input_file, vault_names=vault_names)
 
         processor.load_data()
         processor.clean_vaults()
