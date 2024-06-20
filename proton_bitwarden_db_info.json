@@ -1,0 +1,42 @@
+{
+    "revisionDate": "str",
+    "creationDate": "str",
+    "id": "str",
+    "folderId": "str",
+    "type": "int",
+    "name": "str",
+    "notes": "str",
+    "login": [
+        "dict",
+        {
+            "uris": [
+                "list",
+                {
+                    "uri": "str"
+                }
+            ],
+            "username": "str",
+            "password": "str",
+            "totp": "str"
+        }
+    ],
+    "fields": [
+        "list",
+        {
+            "name": "str",
+            "value": "str",
+            "type": "int"
+        }
+    ],
+    "card": [
+        "dict",
+        {
+            "cardholderName": "str",
+            "brand": "str",
+            "number": "str",
+            "expMonth": "str",
+            "expYear": "str",
+            "code": "str"
+        }
+    ]
+}

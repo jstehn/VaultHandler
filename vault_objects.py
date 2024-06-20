@@ -42,6 +42,7 @@ class Entry:
         self.modify_time = item.get("modifyTime")
         self.state = item.get("state", 1)
         self.alias_email = item.get("aliasEmail", None)
+        self.extra_fields = self.data.get("extraFields", [])
 
     def __repr__(self):
         """Provides a string representation of the entry."""
@@ -196,6 +197,75 @@ class LoginEntry(Entry):
 
         return return_dict
 
+class CreditCardEntry(Entry):
+    """Represents a credit card entry in a password vault."""
+
+    def __init__(self, entry_data: Dict[str, Any]):
+        """Initializes a CreditCardEntry."""
+        super().__init__(entry_data)
+
+        content = self.data.get("content", {})  
+        metadata = self.data.get("metadata", {})
+
+        # Card-Specific Attributes
+        self.cardholder_name: str = content.get("cardholderName")
+        self.card_type: str = content.get("cardType")
+        self.number: str = content.get("number")
+        self.exp_date: str = content.get("expirationDate")
+        self.pin: str = content.get("pin")
+        self.code: str = content.get("code")  # CVV/CVC
+
+        # Initialize other attributes from metadata
+        self.name: str = metadata.get("name")
+        self.note: str = metadata.get("note")
+        self.uuid: str = metadata.get("itemUuid")
+
+    def __hash__(self):
+        """Hash based on card number and cardholder name."""
+        return hash((self.number, self.cardholder_name))
+
+    def __eq__(self, other):
+        """Equality comparison based on hash."""
+        return isinstance(other, CreditCardEntry) and hash(self) == hash(other)
+ 
+    def clean(self):
+        """Optional: Implement cleaning logic specific to credit card data."""
+        pass
+
+    def _merge_entry(self, other: "CreditCardEntry") -> None:
+        """Merges two CreditCardEntry objects (assuming the same card)."""
+        # Implement the merging logic here, e.g., prefer newer expiry date, combine notes, etc.
+        # This is a basic example (replace with your actual logic):
+        if self != other:
+            raise ValueError(f"Unable to merge: {self} != {other}")
+
+        sorted_entries = sorted((self, other), key=lambda x: x.modify_time)
+        newer: "CreditCardEntry" = sorted_entries[-1]
+        self.__dict__ = deepcopy(newer.__dict__)
+        
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Converts the CreditCardEntry object back to a dictionary."""
+        return_dict = deepcopy(self.item_dict)  # Create a deep copy to avoid modifying original data
+        return_dict["itemId"] = self.item_id
+        return_dict["type"] = self.type
+        return_dict["createTime"] = self.create_time
+        return_dict["modifyTime"] = self.modify_time
+
+        metadata = return_dict["data"]["metadata"]
+        metadata["name"] = self.name
+        metadata["note"] = self.note
+        metadata["itemUuid"] = self.uuid
+
+        content = return_dict["data"]["content"]
+        content["cardholderName"] = self.cardholder_name
+        content["cardType"] = self.card_type
+        content["number"] = self.number
+        content["expirationDate"] = self.exp_date
+        content["code"] = self.code
+
+        return return_dict
+
 
 class Vault:
     """Represents a password vault."""
@@ -221,6 +291,7 @@ class Vault:
         entry_type = item_data.get("data", {}).get("type")
         entry_classes = {
             "login": LoginEntry,
+            "creditCard": CreditCardEntry,
         }
         entry_constructor = entry_classes.get(entry_type)
         if entry_constructor:

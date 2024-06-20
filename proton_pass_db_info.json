@@ -1,0 +1,157 @@
+{
+    "login": {
+        "itemId": "str",
+        "shareId": "str",
+        "data": [
+            "dict",
+            {
+                "metadata": [
+                    "dict",
+                    {
+                        "name": "str",
+                        "note": "str",
+                        "itemUuid": "str"
+                    }
+                ],
+                "extraFields": [
+                    "list",
+                    {
+                        "fieldName": "str",
+                        "type": "str",
+                        "data": [
+                            "dict",
+                            {
+                                "content": "str"
+                            }
+                        ]
+                    }
+                ],
+                "platformSpecific": [
+                    "dict",
+                    {
+                        "android": [
+                            "dict",
+                            {
+                                "allowedApps": [
+                                    "list",
+                                    {
+                                        "packageName": "str",
+                                        "hashes": "list",
+                                        "appName": "str"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "type": "str",
+                "content": [
+                    "dict",
+                    {
+                        "username": "str",
+                        "password": "str",
+                        "urls": "list",
+                        "totpUri": "str",
+                        "passkeys": [
+                            "list",
+                            {
+                                "keyId": "str",
+                                "content": "str",
+                                "domain": "str",
+                                "rpId": "str",
+                                "rpName": "str",
+                                "userName": "str",
+                                "userDisplayName": "str",
+                                "userId": "str",
+                                "createTime": "int",
+                                "note": "str",
+                                "credentialId": "str",
+                                "userHandle": "str",
+                                "creationData": [
+                                    "dict",
+                                    {
+                                        "osName": "str",
+                                        "osVersion": "str",
+                                        "deviceName": "str",
+                                        "appVersion": "str"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "state": "int",
+        "aliasEmail": "NoneType",
+        "contentFormatVersion": "int",
+        "createTime": "int",
+        "modifyTime": "int",
+        "pinned": "bool"
+    },
+    "creditCard": {
+        "itemId": "str",
+        "shareId": "str",
+        "data": [
+            "dict",
+            {
+                "metadata": [
+                    "dict",
+                    {
+                        "name": "str",
+                        "note": "str",
+                        "itemUuid": "str"
+                    }
+                ],
+                "extraFields": "list",
+                "type": "str",
+                "content": [
+                    "dict",
+                    {
+                        "cardholderName": "str",
+                        "cardType": "int",
+                        "number": "str",
+                        "verificationNumber": "str",
+                        "expirationDate": "str",
+                        "pin": "str"
+                    }
+                ]
+            }
+        ],
+        "state": "int",
+        "aliasEmail": "NoneType",
+        "contentFormatVersion": "int",
+        "createTime": "int",
+        "modifyTime": "int",
+        "pinned": "bool"
+    },
+    "alias": {
+        "itemId": "str",
+        "shareId": "str",
+        "data": [
+            "dict",
+            {
+                "metadata": [
+                    "dict",
+                    {
+                        "name": "str",
+                        "note": "str",
+                        "itemUuid": "str"
+                    }
+                ],
+                "extraFields": "list",
+                "type": "str",
+                "content": [
+                    "dict",
+                    {}
+                ]
+            }
+        ],
+        "state": "int",
+        "aliasEmail": "str",
+        "contentFormatVersion": "int",
+        "createTime": "int",
+        "modifyTime": "int",
+        "pinned": "bool"
+    }
+}
