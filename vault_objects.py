@@ -31,18 +31,30 @@ class Entry:
     """Represents a generic entry in a password vault."""
 
     def __init__(self, item: Dict[str, Any]):
+        # Root keys
         self.item_dict = item
         self.item_id = item.get("itemId")
-        self.data = item.get("data", {})
-        self.name = self.data.get("metadata").get("name")
-
-        self.pinned = item.get("pinned", False)
-        self.type = self.data.get("type")
-        self.create_time = item.get("createTime")
-        self.modify_time = item.get("modifyTime")
+        self.shareId = item.get("shareId")
+        self.data: Dict[str, Any] = item.get("data", {})
         self.state = item.get("state", 1)
         self.alias_email = item.get("aliasEmail", None)
+        self.content_format_version = item.get("contentFormatVersion", 4)
+        self.create_time = item.get("createTime")
+        self.modify_time = item.get("modifyTime")
+        self.pinned = item.get("pinned", False)
+
+        
+        # Metadata
+        self.metadata: Dict[str, Any] = self.data.get["metadata", {}]
+        self.name = self.metadata.get("name")
+        self.note = self.metadata.get("note")
+        self.item_uuid = self.metadata.get("itemUuid")
+
+        # Extra Fields
         self.extra_fields = self.data.get("extraFields", [])
+        self.platform_specific: List[Dict[str, Any]] = self.data.get("platformSpecific", [])
+        self.type = self.data["type"] # It should throw an error if the type is missing.
+        self.content: List[Dict[str, Any]] = self.data.get("content", [])
 
     def __repr__(self):
         """Provides a string representation of the entry."""
