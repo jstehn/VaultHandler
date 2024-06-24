@@ -510,7 +510,7 @@ class ProtonPassSaver(VaultSaver):
     @staticmethod
     def convert_entry(entry: Entry) -> dict[str, Any]:
         """Converts an Entry object to a dictionary compatible with Proton Pass."""
-        entry_data = deepcopy(vars(Eentry))
+        entry_data = deepcopy(vars(entry))
         entry = {}
 
         entry["itemId"] = entry_data.get("item_id", str(uuid4()))
@@ -542,7 +542,6 @@ class ProtonPassSaver(VaultSaver):
         metadata["name"] = entry_metadata.get("name", [])
         metadata["note"] = entry_metadata.get("metadata", {}).get("username", None)
         metadata["itemUuid"] = entry_metadata.get("metadata", {}).get("item_uuid", str(uuid4().node)[:8])
-
 
 
 def main(
