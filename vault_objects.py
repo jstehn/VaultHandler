@@ -20,10 +20,14 @@ from typing import (
 from collections import defaultdict
 from urllib.parse import urlparse
 from copy import deepcopy
+from uuid import uuid4, UUID
+import datetime
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+NAMESPACE = UUID()
 
 
 # Subclasses for specific entry types (e.g., LoginEntry, CreditCardEntry, etc.)
@@ -31,17 +35,25 @@ class Entry:
     """Represents a generic entry in a password vault."""
 
     def __init__(self, item: Dict[str, Any]):
+        self.instance_time = datetime.datetime.now()
+
         # Root keys
-        self.item_dict = item
-        self.item_id = item.get("itemId")
-        self.shareId = item.get("shareId")
+        self.item_dict: Dict[str, Any] = item
+        self.item_id: str = item.get("id") or str(uuid4())
+        self.share_id: str = item.get("share_id") or str(uuid4())
         self.data: Dict[str, Any] = item.get("data", {})
-        self.state = item.get("state", 1)
-        self.alias_email = item.get("aliasEmail", None)
-        self.content_format_version = item.get("contentFormatVersion", 4)
-        self.create_time = item.get("createTime")
-        self.modify_time = item.get("modifyTime")
-        self.pinned = item.get("pinned", False)
+        self.state: int = item.get("state", 1)
+        self.alias_email: str = item.get("alias_email", None)
+        self.content_format_version: int = item.get("content_format_version", 4)
+        if create_time := item.get("create_time"):
+            self.create_time = datetime.datetime(create_time)
+        else:
+            self.create_time = datetime.datetime.now()
+        if mod_time := item.get("modify_time"):
+            self.modify_time = datetime.datetime(mod_time)
+        else:
+            self.modify_time = datetime.datetime.now()
+        self.favorite: bool = item.get("favorite", False)
 
         
         # Metadata
@@ -357,7 +369,7 @@ class VaultHandler:
     ):
         self.input_file = input_file
         self.vault_names = vault_names
-        self.vaults = []
+        self.vaults:List[Vault] = []
 
     def load_data(
         self, vault_format: Literal["protonpass", "csv", "bitwarden"]
@@ -447,6 +459,7 @@ class VaultSaver:
 
 
 class ProtonPassSaver(VaultSaver):
+
     @staticmethod
     def save_data(output_file: str, vault_handler: VaultHandler) -> None:
         """
@@ -455,7 +468,16 @@ class ProtonPassSaver(VaultSaver):
         """
         try:
             # Get the data to be written using as_dict()
-            data_to_save = vault_handler.as_dict()
+            data_to_save = {}
+            data_to_save["encrypted"] = vault_handler.encrypted
+            data_to_save["userId"] = vault_handler.user_id
+            data_to_save["version"] = vault_handler.version
+            data_to_save["vaults"] = {}
+            for vault in vault_handler.vaults:
+                data_to_save["vaults"][vault.id]
+
+
+
 
             # Create the output zip file
             with zipfile.ZipFile(output_file, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -483,6 +505,44 @@ class ProtonPassSaver(VaultSaver):
 
         except Exception as e:
             raise ValueError(f"Error saving data: {e}")
+
+
+    @staticmethod
+    def convert_entry(entry: Entry) -> dict[str, Any]:
+        """Converts an Entry object to a dictionary compatible with Proton Pass."""
+        entry_data = deepcopy(vars(Eentry))
+        entry = {}
+
+        entry["itemId"] = entry_data.get("item_id", str(uuid4()))
+        entry["shareId"] = entry_data.get("share_id", str(uuid4()))
+        entry["state"] = entry_data.get("state" or 1)
+        entry["aliasEmail"] = entry_data.get("alias_email", None)
+        entry["contentFormatVersion"] = entry_data.get("content_format_version", 4)
+        entry["createTime"] = entry_data.get("create_time", int(datetime.datetime.now().timestamp()))
+        entry["modifyTime"] = entry_data.get("modify_time", int(datetime.datetime.now().timestamp()))
+        entry["favorite"] = entry_data.get("favorite", False)
+
+        entry["data"] = {}
+        
+        if entry_data["entry_type"] == "login":
+            entry["data"]["urls"] = entry_data.get("url", [])
+            entry["data"]["username"] = entry_data.get("username", None)
+            entry["data"]["password"] = entry_data.get("password", None)
+
+        return entry
+    
+    @staticmethod
+    def get_login_data(entry_data: Dict[str, Any]):
+        """Extracts login data from an Entry object."""
+        entry_data: Dict[str, Any] = entry_data["data"]
+        metadata = {}
+        login_data = {}
+        login_data["metadata"] = {}
+        entry_metadata = entry_data.get("metadata", {})
+        metadata["name"] = entry_metadata.get("name", [])
+        metadata["note"] = entry_metadata.get("metadata", {}).get("username", None)
+        metadata["itemUuid"] = entry_metadata.get("metadata", {}).get("item_uuid", str(uuid4().node)[:8])
+
 
 
 def main(
