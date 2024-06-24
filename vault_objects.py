@@ -26,7 +26,7 @@ logging.basicConfig(
 )
 
 
-
+# Subclasses for specific entry types (e.g., LoginEntry, CreditCardEntry, etc.)
 class Entry:
     """Represents a generic entry in a password vault."""
 
@@ -106,7 +106,6 @@ class Entry:
         self._merge_entry(other_entry)
 
 
-# Subclasses for specific entry types (e.g., LoginEntry, CreditCardEntry, etc.)
 class LoginEntry(Entry):
     """Represents a login entry."""
 
@@ -209,6 +208,7 @@ class LoginEntry(Entry):
 
         return return_dict
 
+
 class CreditCardEntry(Entry):
     """Represents a credit card entry in a password vault."""
 
@@ -278,7 +278,7 @@ class CreditCardEntry(Entry):
 
         return return_dict
 
-
+# Vault and VaultHandler objects that create a representation of vaults in this program. It managing the cleaning and processing of vaults once they are loaded in.
 class Vault:
     """Represents a password vault."""
 
@@ -395,6 +395,7 @@ class VaultHandler:
         return VAULT_SAVERS[vault_format].save_data(output_filename, self)
 
 
+# VaultLoaders: Strategy ojects with static methods that load different password databases into a VaultHandler and Vault objects
 class VaultLoader:
     """Superclass for different vault importers"""
 
@@ -437,6 +438,7 @@ class ProtonPassLoader(VaultLoader):
         return vault_handler.vaults
 
 
+# VaultSavers: Strategy objects with static methods that export vaults to an external file.
 class VaultSaver:
     @staticmethod
     def save_data(output_file: str, vault_handler: VaultHandler):
