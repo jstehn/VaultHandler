@@ -1,42 +1,248 @@
 {
-    "revisionDate": "str",
-    "creationDate": "str",
-    "id": "str",
-    "folderId": "str",
-    "type": "int",
-    "name": "str",
-    "notes": "str",
-    "login": [
-        "dict",
-        {
-            "uris": [
-                "list",
-                {
-                    "uri": "str"
+    "type": "object",
+    "properties": {
+      "encrypted": {
+        "type": "boolean"
+      },
+      "folders": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "name"
+          ]
+        }
+      },
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "passwordHistory": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "revisionDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "creationDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "deletedDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "organizationId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "folderId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": {
+              "type": "integer"
+            },
+            "reprompt": {
+              "type": "integer"
+            },
+            "name": {
+              "type": "string"
+            },
+            "notes": {
+              "type": "string"
+            },
+            "favorite": {
+              "type": "boolean"
+            },
+            "login": {
+              "type": "object",
+              "properties": {
+                "fido2Credentials": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "integer"
+                      },
+                      "transports": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "publicKey": {
+                        "type": "string"
+                      },
+                      "counter": {
+                        "type": "integer"
+                      },
+                      "creationDate": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "lastUsedDate": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "name",
+                      "type",
+                      "transports",
+                      "publicKey",
+                      "counter",
+                      "creationDate",
+                      "lastUsedDate"
+                    ]
+                  }
+                },
+                "uris": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "match": {
+                        "type": "string"
+                      },
+                      "uri": {
+                        "type": "string",
+                        "format": "url"
+                      }
+                    },
+                    "required": [
+                      "uri"
+                    ]
+                  }
+                },
+                "username": {
+                  "type": "string"
+                },
+                "password": {
+                  "type": "string"
+                },
+                "totp": {
+                  "type": "string"
                 }
-            ],
-            "username": "str",
-            "password": "str",
-            "totp": "str"
+              },
+              "required": [
+                "uris",
+                "username"
+              ]
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "integer"
+                  },
+                  "linkedId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "name",
+                  "value",
+                  "type"
+                ]
+              }
+            },
+            "card": {
+              "type": "object",
+              "properties": {
+                "cardholderName": {
+                  "type": "string"
+                },
+                "brand": {
+                  "type": "string"
+                },
+                "number": {
+                  "type": "string"
+                },
+                "expMonth": {
+                  "type": "string"
+                },
+                "expYear": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "cardholderName",
+                "brand",
+                "number",
+                "expMonth",
+                "expYear"
+              ]
+            },
+            "collectionIds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              }
+            }
+          },
+          "required": [
+            "passwordHistory",
+            "revisionDate",
+            "creationDate",
+            "deletedDate",
+            "id",
+            "organizationId",
+            "folderId",
+            "type",
+            "reprompt",
+            "name",
+            "favorite",
+            "login",
+            "collectionIds"
+          ]
         }
-    ],
-    "fields": [
-        "list",
-        {
-            "name": "str",
-            "value": "str",
-            "type": "int"
-        }
-    ],
-    "card": [
-        "dict",
-        {
-            "cardholderName": "str",
-            "brand": "str",
-            "number": "str",
-            "expMonth": "str",
-            "expYear": "str",
-            "code": "str"
-        }
+      }
+    },
+    "required": [
+      "encrypted",
+      "folders",
+      "items"
     ]
-}
+  }

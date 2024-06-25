@@ -1,157 +1,264 @@
 {
-    "login": {
-        "itemId": "str",
-        "shareId": "str",
-        "data": [
-            "dict",
-            {
-                "metadata": [
-                    "dict",
-                    {
-                        "name": "str",
-                        "note": "str",
-                        "itemUuid": "str"
-                    }
-                ],
-                "extraFields": [
-                    "list",
-                    {
-                        "fieldName": "str",
-                        "type": "str",
-                        "data": [
-                            "dict",
-                            {
-                                "content": "str"
-                            }
+    "type": "object",
+    "properties": {
+      "encrypted": {
+        "type": "boolean"
+      },
+      "userId": {
+        "type": "string"
+      },
+      "vaults": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "display": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "type": "integer"
+                },
+                "icon": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "color",
+                "icon"
+              ]
+            },
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "itemId": {
+                    "type": "string"
+                  },
+                  "shareId": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "metadata": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "note": {
+                            "type": "string"
+                          },
+                          "itemUuid": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "itemUuid"
                         ]
-                    }
-                ],
-                "platformSpecific": [
-                    "dict",
-                    {
-                        "android": [
-                            "dict",
-                            {
-                                "allowedApps": [
-                                    "list",
-                                    {
-                                        "packageName": "str",
-                                        "hashes": "list",
-                                        "appName": "str"
+                      },
+                      "extraFields": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "fieldName": {
+                              "type": "string"
+                            },
+                            "type": {
+                              "type": "string"
+                            },
+                            "data": {
+                              "type": "object",
+                              "properties": {
+                                "content": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "content"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "fieldName",
+                            "type",
+                            "data"
+                          ]
+                        }
+                      },
+                      "platformSpecific": {
+                        "type": "object",
+                        "properties": {
+                          "android": {
+                            "type": "object",
+                            "properties": {
+                              "allowedApps": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "packageName": {
+                                      "type": "string"
+                                    },
+                                    "hashes": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "appName": {
+                                      "type": "string"
                                     }
-                                ]
+                                  },
+                                  "required": [
+                                    "packageName",
+                                    "hashes",
+                                    "appName"
+                                  ]
+                                }
+                              }
                             }
-                        ]
-                    }
-                ],
-                "type": "str",
-                "content": [
-                    "dict",
-                    {
-                        "username": "str",
-                        "password": "str",
-                        "urls": "list",
-                        "totpUri": "str",
-                        "passkeys": [
-                            "list",
-                            {
-                                "keyId": "str",
-                                "content": "str",
-                                "domain": "str",
-                                "rpId": "str",
-                                "rpName": "str",
-                                "userName": "str",
-                                "userDisplayName": "str",
-                                "userId": "str",
-                                "createTime": "int",
-                                "note": "str",
-                                "credentialId": "str",
-                                "userHandle": "str",
-                                "creationData": [
-                                    "dict",
-                                    {
-                                        "osName": "str",
-                                        "osVersion": "str",
-                                        "deviceName": "str",
-                                        "appVersion": "str"
-                                    }
-                                ]
+                          }
+                        }
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "content": {
+                        "type": "object",
+                        "properties": {
+                          "username": {
+                            "type": "string"
+                          },
+                          "password": {
+                            "type": "string"
+                          },
+                          "urls": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "url"
                             }
+                          },
+                          "totpUri": {
+                            "type": "string"
+                          },
+                          "passkeys": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "type": "integer"
+                                },
+                                "transports": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                },
+                                "publicKey": {
+                                  "type": "string"
+                                },
+                                "counter": {
+                                  "type": "integer"
+                                },
+                                "creationDate": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                },
+                                "lastUsedDate": {
+                                  "type": "string",
+                                  "format": "date-time"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "type",
+                                "transports",
+                                "publicKey",
+                                "counter",
+                                "creationDate",
+                                "lastUsedDate"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "username",
+                          "password",
+                          "urls"
                         ]
-                    }
+                      }
+                    },
+                    "required": [
+                      "metadata",
+                      "extraFields",
+                      "platformSpecific",
+                      "type",
+                      "content"
+                    ]
+                  },
+                  "state": {
+                    "type": "integer"
+                  },
+                  "aliasEmail": {
+                    "type": "string"
+                  },
+                  "contentFormatVersion": {
+                    "type": "integer"
+                  },
+                  "createTime": {
+                    "type": "integer"
+                  },
+                  "modifyTime": {
+                    "type": "integer"
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "itemId",
+                  "shareId",
+                  "data",
+                  "state",
+                  "contentFormatVersion",
+                  "createTime",
+                  "modifyTime",
+                  "pinned"
                 ]
+              }
             }
-        ],
-        "state": "int",
-        "aliasEmail": "NoneType",
-        "contentFormatVersion": "int",
-        "createTime": "int",
-        "modifyTime": "int",
-        "pinned": "bool"
+          },
+          "required": [
+            "name",
+            "items"
+          ]
+        }
+      }
     },
-    "creditCard": {
-        "itemId": "str",
-        "shareId": "str",
-        "data": [
-            "dict",
-            {
-                "metadata": [
-                    "dict",
-                    {
-                        "name": "str",
-                        "note": "str",
-                        "itemUuid": "str"
-                    }
-                ],
-                "extraFields": "list",
-                "type": "str",
-                "content": [
-                    "dict",
-                    {
-                        "cardholderName": "str",
-                        "cardType": "int",
-                        "number": "str",
-                        "verificationNumber": "str",
-                        "expirationDate": "str",
-                        "pin": "str"
-                    }
-                ]
-            }
-        ],
-        "state": "int",
-        "aliasEmail": "NoneType",
-        "contentFormatVersion": "int",
-        "createTime": "int",
-        "modifyTime": "int",
-        "pinned": "bool"
-    },
-    "alias": {
-        "itemId": "str",
-        "shareId": "str",
-        "data": [
-            "dict",
-            {
-                "metadata": [
-                    "dict",
-                    {
-                        "name": "str",
-                        "note": "str",
-                        "itemUuid": "str"
-                    }
-                ],
-                "extraFields": "list",
-                "type": "str",
-                "content": [
-                    "dict",
-                    {}
-                ]
-            }
-        ],
-        "state": "int",
-        "aliasEmail": "str",
-        "contentFormatVersion": "int",
-        "createTime": "int",
-        "modifyTime": "int",
-        "pinned": "bool"
-    }
-}
+    "required": [
+      "encrypted",
+      "userId",
+      "vaults"
+    ]
+  }
+  
