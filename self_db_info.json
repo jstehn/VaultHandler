@@ -1,0 +1,252 @@
+{
+  "type": "object",
+  "properties": {
+    "encrypted": {
+      "type": "boolean"
+    },
+    "userId": {
+      "type": "string"
+    },
+    "folders": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "itemId": {
+                  "type": "string"
+                },
+                "shareId": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "metadata": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "note": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "itemUuid": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "itemUuid"
+                      ]
+                    },
+                    "extraFields": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fieldName": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "data": {
+                            "type": "object",
+                            "properties": {
+                              "content": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "content"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "fieldName",
+                          "type",
+                          "data"
+                        ]
+                      }
+                    },
+                    "platformSpecific": {
+                      "type": "object",
+                      "properties": {
+                        "android": {
+                          "type": "object",
+                          "properties": {
+                            "allowedApps": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "packageName": {
+                                    "type": "string"
+                                  },
+                                  "hashes": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "appName": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "packageName",
+                                  "hashes",
+                                  "appName"
+                                ]
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "content": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "password": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "urls": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "format": "url"
+                          }
+                        },
+                        "totpUri": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "passkeys": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "format": "uuid"
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "type": {
+                                "type": "integer"
+                              },
+                              "transports": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "publicKey": {
+                                "type": "string"
+                              },
+                              "counter": {
+                                "type": "integer"
+                              },
+                              "creationDate": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "lastUsedDate": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name",
+                              "type",
+                              "transports",
+                              "publicKey",
+                              "counter",
+                              "creationDate",
+                              "lastUsedDate"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "urls"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "metadata",
+                    "extraFields",
+                    "platformSpecific",
+                    "type",
+                    "content"
+                  ]
+                },
+                "state": {
+                  "type": "integer"
+                },
+                "aliasEmail": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "contentFormatVersion": {
+                  "type": "integer"
+                },
+                "createTime": {
+                  "type": "integer"
+                },
+                "modifyTime": {
+                  "type": "integer"
+                },
+                "pinned": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "itemId",
+                "data",
+                "state",
+                "contentFormatVersion",
+                "createTime",
+                "modifyTime",
+                "pinned"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "items"
+        ]
+      }
+    }
+  },
+  "required": [
+    "encrypted",
+    "userId",
+    "folders"
+  ]
+}

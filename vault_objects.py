@@ -39,21 +39,31 @@ class Entry:
 
         # Root keys
         self.item_dict: Dict[str, Any] = item
-        self.item_id: str = item.get("id") or str(uuid4())
-        self.name = item.get("name")
-        self.data: Dict[str, Any] = item.get("data", {})
+        self.item_id: str = item.get("id")
         self.state: int = item.get("state", 1)
-        self.vault: str = item.get("vault")
+        self.data: Dict[str, Any] = item.get("data", {})
+        self.folder = item.get("folder")
+        self.type: Literal["login", "credit_card", "note", "alias"] = item.get("type")
+        self.favorite: bool = item.get("favorite", False)
         if create_time := item.get("create_time"):
             self.create_time = datetime.datetime(create_time)
         else:
             self.create_time = datetime.datetime.now()
         if mod_time := item.get("modify_time"):
-            self.modify_time = datetime.datetime(mod_time)
+            self.mod_time = datetime.datetime(mod_time)
         else:
-            self.modify_time = datetime.datetime.now()
-        self.favorite: bool = item.get("favorite", False)
-        self.type: Literal["login", "credit_card", "note", "alias"] = self.data["type"]
+            self.mod_time = datetime.datetime.now()
+
+        # Metadata
+        metadata = item.get("metadata", {})
+        self.metadata: Dict[str, str] = {}
+        self.metadata["name"] = metadata.get("name")
+        self.metadata["note"] = metadata.get("note")
+        self.metadata["uiid"] = metadata.get("uiid")
+
+        # Extra Fields
+        self.extra_fields = item.get("extra_fields")
+
 
     def __repr__(self):
         """Provides a string representation of the entry."""
@@ -113,18 +123,16 @@ class LoginEntry(Entry):
         Initializes a LoginEntry. If another LoginEntry is provided, it merges their data.
         """
         super().__init__(entry_data)
-
-        content: Dict[str, Any] = self.data.get("content", {})
-        metadata: Dict[str, Any] = self.data.get("metadata", {})
+        content = self.data.get("content")
 
         # Initialize fields from nested dictionaries
-        self.username: str = content.get("username")
-        self.password: str = content.get("password")
-        self.name: str = metadata.get("name")
-        self.note: str = metadata.get("note")
-        self.totp: str = content.get("totpUri", "")
-        self.urls: List[str] = content.get("urls", [])
-        self.passkeys: List[Dict[str, Any]] = content.get("passkeys", [])
+        self.content: Dict[str, Any] = {}
+        self.content["username"] = content.get("username")
+        self.content["password"] = content.get("password")
+        self.content["urls"] = content.get("urls", [])
+        self.content["totp"] = content.get("totp")
+        self.content["passkeys"] = content.get("passkeys", [])        
+        
 
     def __hash__(self):
         """Hash based on name, username, and password."""
@@ -283,15 +291,16 @@ class Vault:
 
     def __init__(
         self,
-        id: str,
-        name: str,
-        items: Optional[List[Entry]] = None,
         vault_dict: Dict[str, Any] = None,
     ):
-        self.id = id
-        self.name = name
-        self.items = items or []
         self.vault_dict = vault_dict or dict()
+        self.items = []
+
+        metadata = vault_dict.get("metadata", {})
+        self.metadata: Dict[str, str] = {}
+        self.metadata["name"] = metadata.get("name")
+        self.metadata["description"] = metadata.get("description")
+        self.metadata["id"] = metadata.get("id")
         for item in vault_dict.get("items", []):
             entry = self._create_entry(item)
             if entry:
