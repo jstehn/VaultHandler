@@ -14,12 +14,13 @@
               "format": "uuid"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "nullable": true
             }
           },
           "required": [
             "id",
-            "name"
+            "name" 
           ]
         }
       },
@@ -37,15 +38,18 @@
             },
             "revisionDate": {
               "type": "string",
-              "format": "date-time"
+              "format": "date-time",
+              "nullable": true
             },
             "creationDate": {
               "type": "string",
-              "format": "date-time"
+              "format": "date-time",
+              "nullable": true
             },
             "deletedDate": {
               "type": "string",
-              "format": "date-time"
+              "format": "date-time",
+              "nullable": true
             },
             "id": {
               "type": "string",
@@ -53,11 +57,13 @@
             },
             "organizationId": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "nullable": true
             },
             "folderId": {
               "type": "string",
-              "format": "uuid"
+              "format": "uuid",
+              "nullable": true
             },
             "type": {
               "type": "integer"
@@ -66,10 +72,12 @@
               "type": "integer"
             },
             "name": {
-              "type": "string"
+              "type": "string",
+              "nullable": true
             },
             "notes": {
-              "type": "string"
+              "type": "string",
+              "nullable": true
             },
             "favorite": {
               "type": "boolean"
@@ -144,18 +152,22 @@
                   }
                 },
                 "username": {
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 "password": {
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 "totp": {
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               },
               "required": [
                 "uris",
-                "username"
+                "username",
+                "password"
               ]
             },
             "fields": {

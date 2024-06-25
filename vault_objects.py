@@ -40,11 +40,10 @@ class Entry:
         # Root keys
         self.item_dict: Dict[str, Any] = item
         self.item_id: str = item.get("id") or str(uuid4())
-        self.share_id: str = item.get("share_id") or str(uuid4())
+        self.name = item.get("name")
         self.data: Dict[str, Any] = item.get("data", {})
         self.state: int = item.get("state", 1)
-        self.alias_email: str = item.get("alias_email", None)
-        self.content_format_version: int = item.get("content_format_version", 4)
+        self.vault: str = item.get("vault")
         if create_time := item.get("create_time"):
             self.create_time = datetime.datetime(create_time)
         else:
@@ -54,19 +53,7 @@ class Entry:
         else:
             self.modify_time = datetime.datetime.now()
         self.favorite: bool = item.get("favorite", False)
-
-        
-        # Metadata
-        self.metadata: Dict[str, Any] = self.data.get["metadata", {}]
-        self.name = self.metadata.get("name")
-        self.note = self.metadata.get("note")
-        self.item_uuid = self.metadata.get("itemUuid")
-
-        # Extra Fields
-        self.extra_fields = self.data.get("extraFields", [])
-        self.platform_specific: List[Dict[str, Any]] = self.data.get("platformSpecific", [])
-        self.type = self.data["type"] # It should throw an error if the type is missing.
-        self.content: List[Dict[str, Any]] = self.data.get("content", [])
+        self.type: Literal["login", "credit_card", "note", "alias"] = self.data["type"]
 
     def __repr__(self):
         """Provides a string representation of the entry."""

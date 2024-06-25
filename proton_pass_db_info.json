@@ -16,7 +16,8 @@
               "type": "string"
             },
             "description": {
-              "type": "string"
+              "type": "string",
+              "nullable": true
             },
             "display": {
               "type": "object",
@@ -54,7 +55,8 @@
                             "type": "string"
                           },
                           "note": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "itemUuid": {
                             "type": "string"
@@ -150,7 +152,8 @@
                             }
                           },
                           "totpUri": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": true
                           },
                           "passkeys": {
                             "type": "array",
@@ -261,4 +264,3 @@
       "vaults"
     ]
   }
-  
