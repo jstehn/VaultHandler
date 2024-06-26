@@ -27,122 +27,114 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-NAMESPACE = UUID()
-
-
-# Subclasses for specific entry types (e.g., LoginEntry, CreditCardEntry, etc.)
 class Entry:
-    """Represents a generic entry in a password vault."""
+    """Represents a generic entry in a password vault.
+    
+    Attributes:
+        orig_data (Dict[str, Any]): A deep copy of the original entry data.
+        item_id (str): Unique identifier for the entry. Defaults to a UUID4.
+        name (str): Name of the entry. Defaults to an empty string.
+        entry_type (Literal["login", "credit_card", "note", "alias"]): Type of the entry.
+        favorite (bool): Whether the entry is marked as a favorite. Defaults to False.
+        create_time (datetime.datetime): Creation timestamp of the entry.
+        mod_time (datetime.datetime): Last modification timestamp of the entry.
+        note (Optional[str]): Notes or additional information about the entry.
+        data (Dict[str, Any]): Dictionary containing entry-specific data.
+        extra_fields (Dict[str, Any]): Dictionary for storing extra fields specific to the password manager.
+    """
+    
+    def __init__(self, entry_data: Dict[str, Any]):
+        """Initializes an Entry object.
 
-    def __init__(self, item: Dict[str, Any]):
+        Args:
+            entry_data: A dictionary containing the entry data.
+        """
         self.instance_time = datetime.datetime.now()
 
         # Root keys
-        self.item_dict: Dict[str, Any] = item
-        self.item_id: str = item.get("id")
-        self.state: int = item.get("state", 1)
-        self.data: Dict[str, Any] = item.get("data", {})
-        self.folder = item.get("folder")
-        self.type: Literal["login", "credit_card", "note", "alias"] = item.get("type")
-        self.favorite: bool = item.get("favorite", False)
-        if create_time := item.get("create_time"):
-            self.create_time = datetime.datetime(create_time)
-        else:
-            self.create_time = datetime.datetime.now()
-        if mod_time := item.get("modify_time"):
-            self.mod_time = datetime.datetime(mod_time)
-        else:
-            self.mod_time = datetime.datetime.now()
+        self.orig_data = deepcopy(entry_data)
+        self.item_id: str = entry_data.get("id", str(uuid4()))
+        self.name: str = entry_data.get("name", "")
+        self.entry_type: Literal[
+            "login", "credit_card", "note", "alias"
+        ] = entry_data.get("type")
+        self.favorite: bool = entry_data.get("favorite", False)
+        self.create_time: datetime.datetime = datetime.datetime.fromtimestamp(
+            entry_data.get("create_time", self.instance_time.timestamp())
+        )
+        self.mod_time: datetime.datetime = datetime.datetime.fromtimestamp(
+            entry_data.get("modify_time", self.instance_time.timestamp())
+        )
+        self.note: Optional[str] = entry_data.get("note")
 
-        # Metadata
-        metadata = item.get("metadata", {})
-        self.metadata: Dict[str, str] = {}
-        self.metadata["name"] = metadata.get("name")
-        self.metadata["note"] = metadata.get("note")
-        self.metadata["uiid"] = metadata.get("uiid")
+        # Data and Extra Fields
+        self.data: Dict[str, Any] = {}  # To be populated by subclasses
+        self.extra_fields: Dict[str, Any] = entry_data.get("extra_fields", {})
 
-        # Extra Fields
-        self.extra_fields = item.get("extra_fields")
-
+    @property
+    def entry_id(self) -> Tuple[str, str, str]:
+        """Returns an immutable tuple of (item_id, name, type)."""
+        return (self.item_id, self.name, self.entry_type)
 
     def __repr__(self):
         """Provides a string representation of the entry."""
-        return f"Entry(item_id={self.item_id}, type={self.type}, name={self.name})"
+        return f"Entry(item_id={self.item_id}, type={self.entry_type}, name={self.name})"
 
     def __str__(self):
-        return f"Entry(type={self.type}, name={self.name})"
+        """Provides a human-readable string representation of the entry."""
+        return f"Entry(type={self.entry_type}, name={self.name})"
+
+    def equals(self, other: "Entry") -> bool:
+        """Compares two entries based on type and entry_id."""
+        return isinstance(other, type(self)) and self.entry_id == other.entry_id
+
+    def merge(self, other: "Entry") -> None:
+        """Merges with another entry if they are of the same type."""
+        if not isinstance(other, type(self)):
+            raise TypeError("Cannot merge entries of different types.")
+        sorted_entries = sorted(
+            [self, other], key=lambda x: x.mod_time, reverse=True
+        )
+        # Corrected merge call:
+        sorted_entries[0]._merge_entry(sorted_entries[1])
+
+    def _merge_entry(self, other: "Entry") -> None:
+        """Merges the current entry with another entry of the same type."""
+        raise NotImplementedError("Merging not implemented for this entry type.")
 
     def clean(self):
-        """Placeholder for cleaning specific entry types."""
-        raise NotImplementedError("Subclass must implement clean!")
+        """Cleans the data of the entry."""
+        raise NotImplementedError("Cleaning not implemented for this entry type.")
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts the entry back to a dictionary format."""
-        raise NotImplementedError("Subclass must implement to_dict!")
-
-    def _merge_entry(self, other_entry: "Entry") -> None:
-        """Placeholder for merging entries of the same type."""
-        raise NotImplementedError(
-            "Merging not implemented for this entry type."
-        )
-
-    def unique_list(
-        self,
-        lst: List[Union[str, float, int]],
-    ) -> List[Union[str, float, int]]:
-        """Returns a unique list of strings, floats, or integers while preserving order."""
+    @staticmethod
+    def unique_list(lst: List) -> List:
+        """Returns a unique list while preserving order."""
         seen = set()
-        return [x for x in lst if not (x in seen or seen.add(x))]
-
-    def clean_name(name: Optional[str]) -> Optional[str]:
-        """Cleans item names (title case for websites, handles None)."""
-        return name.title() if name and not urlparse(name).scheme else name
-
-    def merge(self, other_entry: "Entry") -> None:
-        """
-        Merges this entry with another entry of the same type.
-
-        Args:
-            other_entry: The other Entry object to merge with.
-
-        Raises:
-            TypeError: If the other entry is not of the same type.
-        """
-        if not isinstance(other_entry, type(self)):
-            raise TypeError("Cannot merge entries of different types.")
-
-        # Call the subclass-specific merge implementation
-        self._merge_entry(other_entry)
+        return [
+            x for x in lst if not (x in seen or seen.add(x))
+        ]
 
 
 class LoginEntry(Entry):
     """Represents a login entry."""
 
     def __init__(self, entry_data: Dict[str, Any]):
-        """
-        Initializes a LoginEntry. If another LoginEntry is provided, it merges their data.
+        """Initializes a LoginEntry object.
+        
+        Args:
+            entry_data: A dictionary containing the entry data.
         """
         super().__init__(entry_data)
-        content = self.data.get("content")
 
         # Initialize fields from nested dictionaries
-        self.content: Dict[str, Any] = {}
-        self.content["username"] = content.get("username")
-        self.content["password"] = content.get("password")
-        self.content["urls"] = content.get("urls", [])
-        self.content["totp"] = content.get("totp")
-        self.content["passkeys"] = content.get("passkeys", [])        
-        
+        self.username = self.data.get("username", "")
+        self.password = self.data.get("password", "")
+        self.urls = self.data.get("urls", [])
+        self.totp = self.data.get("totp", "")
+        self.passkeys = self.data.get("passkeys", [])        
 
-    def __hash__(self):
-        """Hash based on name, username, and password."""
-        return hash((self.type, self.name, self.username, self.password))
-
-    def __eq__(self, other):
-        """Equality comparison based on hash."""
-        return isinstance(other, LoginEntry) and hash(self) == hash(other)
-
-    def clean_url(self, url: str) -> str:
+    @staticmethod
+    def clean_url(url: str) -> str:
         """Cleans URLs to their base form."""
         parsed_url = urlparse(url)
         return (
@@ -151,69 +143,38 @@ class LoginEntry(Entry):
             else url
         )
 
-    def clean_name(self, name: Optional[str]) -> Optional[str]:
-        """Cleans item names (title case for websites, handles None)."""
-        return name.title() if name and not "." in name else name
-
-    def clean(self, clean_name=False):
+    def clean(self) -> None:
         """Cleans URLs and name in a login entry."""
         if self.urls:
             self.urls = self.unique_list(
                 [self.clean_url(url) for url in self.urls]
             )
-        if clean_name and self.name:
-            self.name = self.clean_name(self.name)
 
     def _merge_entry(self, other: "LoginEntry") -> None:
         """Merges two LoginEntry objects."""
-        if self != other:
+        if not self.equals(other):
             raise ValueError(f"Unable to merge: {self} != {other}")
-        else:
-            sorted_entries = sorted((self, other), key=lambda x: x.modify_time)
-            older: "LoginEntry" = sorted_entries[0]
-            newer: "LoginEntry" = sorted_entries[1]
-            self.urls = self.unique_list(self.urls + other.urls)
-            seen = set()
-            self.passkeys = [
-                passkey
-                for passkey in (
-                    self.data.get("passkeys", [])
-                    + other.data.get("passkeys", [])
-                )
-                if not (
-                    passkey.get("keyId") in seen
-                    or seen.add(passkey.get("keyId"))
-                )
-            ]
-            self.data["extraFields"] = self.data.get(
-                "extraFields", []
-            ) + other.data.get("extraFields", [])
-            self.pinned = newer.pinned
-            self.modify_time = newer.modify_time
-            self.item_id = newer.item_id
 
-    def to_dict(self) -> Dict[str, Any]:
-        """Creates a dictionary representation of the entry for Proton Pass"""
-        return_dict = deepcopy(self.item_dict)
-        return_dict["itemId"] = self.item_id
-        return_dict["type"] = "login"
-        return_dict["createTime"] = self.create_time
-        return_dict["modifyTime"] = self.modify_time
-        return_dict["pinned"] = self.pinned
-        return_dict["aliasEmail"] = self.alias_email
+        # Merge URLs
+        self.data["urls"] = self.unique_list(self.data["urls"] + other.data["urls"])
 
-        metadata = return_dict["data"]["metadata"]
-        metadata["name"] = self.name
-        metadata["note"] = self.note
+        # Merge Passkeys
+        seen_passkeys = set()
+        self.data["passkeys"] = [
+            pk for pk in self.data["passkeys"] + other.data["passkeys"]
+            if pk.get("key_id") not in seen_passkeys
+            and not seen_passkeys.add(pk.get("key_id"))
+        ]
+        
+        # Use newer values for simple attributes
+        self.username = self.username or other.username
+        self.password = self.password or other.password
+        self.totp = self.totp or other.totp
+        self.mod_time = max(self.mod_time, other.mod_time)
+        self.favorite = self.favorite or other.favorite
 
-        content = return_dict["data"]["content"]
-        content["username"] = self.username
-        content["password"] = self.password
-        content["urls"] = self.urls
-        content["totpUri"] = self.totp
-        content["passkeys"] = self.passkeys
-
-        return return_dict
+        # Merge extra_fields dictionaries (preferring self in case of conflicts)
+        self.extra_fields = {**other.extra_fields, **self.extra_fields}
 
 
 class CreditCardEntry(Entry):
